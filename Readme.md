@@ -60,5 +60,3 @@ public partial class ChildStyleMapFlat
 That is, any property with the **Notify** attribute will be turned into a property with a backing field that calls your specified function (the default is '`OnPropertyChanged`') when the property's value changes.
 
 Simple!
-
-There is a test project in the source repo that shows this working, as well.

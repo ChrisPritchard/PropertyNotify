@@ -27,13 +27,13 @@
         <PackageTags>source generator;inotifychanged</PackageTags>
         <Description>Provides a Notify attribute that will create a partial property version of an
             existing property that calls a method when changed</Description>
-        <Version>0.1</Version>
+        <Version>0.2</Version>
     </PropertyGroup>
 
     <ItemGroup>
-        <None Include="../LICENSE" Pack="true" PackagePath="" />
-        <None Include="../README.md" Pack="true" PackagePath="" />
-        <None Include="../icon.png" Pack="true" PackagePath="" />
+        <None Include="LICENSE" Pack="true" PackagePath="" />
+        <None Include="README.md" Pack="true" PackagePath="" />
+        <None Include="icon.png" Pack="true" PackagePath="" />
         <Compile Include="Generator.cs" />
         <Compile Include="NotifyAttribute.cs" />
     </ItemGroup>
