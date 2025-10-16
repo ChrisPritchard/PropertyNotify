@@ -27,7 +27,7 @@
         <PackageTags>source generator;inotifychanged</PackageTags>
         <Description>Provides a Notify attribute that will create a partial property version of an
             existing property that calls a method when changed</Description>
-        <Version>1.0.0</Version>
+        <Version>0.1</Version>
     </PropertyGroup>
 
     <ItemGroup>
