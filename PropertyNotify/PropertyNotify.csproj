@@ -1,0 +1,60 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <LangVersion>13</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <IsRoslynAnalyser>true</IsRoslynAnalyser>
+        <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+        <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <IsPackable>true</IsPackable>
+        <IncludeBuildOutput>true</IncludeBuildOutput>
+        <IncludeSymbols>false</IncludeSymbols>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+        <NoPackageAnalysis>true</NoPackageAnalysis>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <Authors>Chris Pritchard</Authors>
+        <PackageLicenseFile>LICENSE</PackageLicenseFile>
+        <RepositoryUrl>https://github.com/ChrisPritchard/PropertyNotify</RepositoryUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageIcon>icon.png</PackageIcon>
+        <PackageTags>source generator;inotifychanged</PackageTags>
+        <Description>Provides a Notify attribute that will create a partial property version of an
+            existing property that calls a method when changed</Description>
+        <Version>1.0.0</Version>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="LICENSE" Pack="true" PackagePath="" />
+        <None Include="README.md" Pack="true" PackagePath="" />
+        <None Include="icon.png" Pack="true" PackagePath="" />
+        <Compile Include="Generator.cs" />
+        <Compile Include="NotifyAttribute.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.5.0" />
+        <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <Target Name="GetGitVersion" BeforeTargets="GenerateNuspec">
+        <Exec Command="git rev-parse HEAD" ConsoleToMSBuild="true" IgnoreExitCode="true">
+            <Output TaskParameter="ConsoleOutput" PropertyName="GitCommitHash" />
+        </Exec>
+        <PropertyGroup>
+            <RepositoryCommit Condition="'$(GitCommitHash)' != ''">$(GitCommitHash)</RepositoryCommit>
+            <RepositoryCommit Condition="'$(RepositoryCommit)' == ''">unknown</RepositoryCommit>
+        </PropertyGroup>
+        <Message Text="RepositoryCommit: $(RepositoryCommit)" Importance="high" />
+    </Target>
+
+</Project>
