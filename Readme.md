@@ -29,12 +29,6 @@ public partial class ChildStyleMapFlat
 }
 ```
 
-And you reference this package as an 'analyzer', e.g.
-
-```xml
-<PackageReference Include="ProjectNotify" Version="1.0.0" OutputItemType="Analyzer" />
-```
-
 Then Generator.cs (which is an [incremental source generator](https://github.com/dotnet/roslyn/blob/main/docs/features/incremental-generators.cookbook.md)) will *silently* (as in you wont see the output, but the compiler will) generate the following:
 
 ```c#
@@ -60,3 +54,10 @@ public partial class ChildStyleMapFlat
 That is, any property with the **Notify** attribute will be turned into a property with a backing field that calls your specified function (the default is '`OnPropertyChanged`') when the property's value changes.
 
 Simple!
+
+If you want to see what its generating, you can add this to the property group of your using project:
+
+```xml
+<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+<CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)\GeneratedFiles</CompilerGeneratedFilesOutputPath>
+```
