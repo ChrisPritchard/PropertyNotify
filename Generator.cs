@@ -13,31 +13,31 @@ namespace PropertyNotify
     [Generator]
     public class Generator : IIncrementalGenerator
     {
+        private static readonly string notify_attribute_type = typeof(NotifyAttribute).FullName;
+
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             var propertyDeclarations = context.SyntaxProvider
-                .CreateSyntaxProvider(
-                    predicate: static (s, _) => s is PropertyDeclarationSyntax { AttributeLists.Count: > 0 },
-                    transform: static (ctx, _) => GetSemanticTargetForGeneration(ctx))
-                .Where(static m => m is not null);
+                .ForAttributeWithMetadataName(notify_attribute_type,
+                    IsValidTarget,
+                    GetSemanticTargetForGeneration);
 
             var compilationAndProperties = context.CompilationProvider.Combine(propertyDeclarations.Collect());
             context.RegisterSourceOutput(compilationAndProperties, static (spc, source) => Execute(source.Right, spc));
         }
 
-        private static readonly string notify_attribute_type = typeof(NotifyAttribute).FullName;
-
-        private static PropertyInfo GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
+        private static bool IsValidTarget(SyntaxNode context, CancellationToken _)
         {
-            var declaration = (PropertyDeclarationSyntax)context.Node;
-            var symbol = context.SemanticModel.GetDeclaredSymbol(declaration);
-            if (symbol == null)
-                return null;
+            if (context is not PropertyDeclarationSyntax { AttributeLists.Count: > 0 } prop)
+                return false;
 
-            var attribute = symbol.GetAttributes().FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == notify_attribute_type);
-            if (attribute == null)
-                return null;
+            return prop.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword));
+        }
 
+        private static PropertyInfo GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext context, CancellationToken _)
+        {
+            var attribute = context.Attributes.First();
+            var symbol = context.TargetSymbol as IPropertySymbol;
             var method_name = "OnPropertyChanged";
             var pass_changed_name = false;
 
@@ -51,7 +51,7 @@ namespace PropertyNotify
                     pass_changed_name = (bool)init_args[1].Value;
             }
 
-            var containing_type = symbol.ContainingType;
+            var containing_type = context.TargetSymbol.ContainingType;
             if (containing_type == null)
                 return null;
 

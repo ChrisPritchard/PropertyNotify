@@ -9,16 +9,19 @@ public class GeneratorTests
     private static string Convert(string source)
     {
         var compilation = CSharpCompilation.Create("Test")
-            .AddSyntaxTrees(CSharpSyntaxTree.ParseText(source))
             .AddReferences(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
-            .AddReferences(MetadataReference.CreateFromFile(typeof(PropertyNotify.NotifyAttribute).Assembly.Location));
+            .AddReferences(MetadataReference.CreateFromFile(typeof(PropertyNotify.NotifyAttribute).Assembly.Location))
+            .AddSyntaxTrees(CSharpSyntaxTree.ParseText(source));
 
         var generator = new PropertyNotify.Generator();
 
         CSharpGeneratorDriver.Create(generator)
-            .RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out _);
+            .RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
 
-        var result = outputCompilation.SyntaxTrees.ToArray()[1]; // Skip original
+        if (diagnostics.Any())
+            Assert.Fail(diagnostics.ToString());
+
+        var result = outputCompilation.SyntaxTrees.ToArray()[1];
         return result.ToString();
     }
 
@@ -108,7 +111,7 @@ using PropertyNotify;
         
 public partial class TestClass
 {
-    [Notify(pass_changed_name: true)]
+    [Notify(pass_changed_name = true)]
     public partial string TestProp { get; set; }
 
     private void OnPropertyChanged(string name) {}
@@ -147,7 +150,7 @@ using PropertyNotify;
         
 public partial class TestClass
 {
-    [Notify(pass_changed_name: true, method_name = ""CallThis"")]
+    [Notify(pass_changed_name = true, method_name = ""CallThis"")]
     public partial string TestProp { get; set; }
 
     private void CallThis(string name) {}
