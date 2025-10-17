@@ -27,8 +27,13 @@
         <PackageTags>source generator;inotifychanged</PackageTags>
         <Description>Provides a Notify attribute that will create a partial property version of an
             existing property that calls a method when changed</Description>
-        <Version>0.2</Version>
+        <Version>0.3</Version>
     </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true"
+            PackagePath="analyzers/dotnet/cs" Visible="false" />
+    </ItemGroup>
 
     <ItemGroup>
         <None Include="LICENSE" Pack="true" PackagePath="" />
