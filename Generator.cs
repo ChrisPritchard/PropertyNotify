@@ -25,49 +25,51 @@ namespace PropertyNotify
             context.RegisterSourceOutput(compilationAndProperties, static (spc, source) => Execute(source.Right, spc));
         }
 
+        private static readonly string notify_attribute_type = typeof(NotifyAttribute).FullName;
+
         private static PropertyInfo GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
         {
-            var propertyDeclaration = (PropertyDeclarationSyntax)context.Node;
-            var propertySymbol = context.SemanticModel.GetDeclaredSymbol(propertyDeclaration);
-            if (propertySymbol == null)
+            var declaration = (PropertyDeclarationSyntax)context.Node;
+            var symbol = context.SemanticModel.GetDeclaredSymbol(declaration);
+            if (symbol == null)
                 return null;
 
-            foreach (var attribute in propertySymbol.GetAttributes())
+            var attribute = symbol.GetAttributes().FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == notify_attribute_type);
+            if (attribute == null)
+                return null;
+
+            var method_name = "OnPropertyChanged";
+            var pass_changed_name = false;
+
+            var init_args = attribute.ConstructorArguments;
+            if (init_args.Length > 0)
             {
-                if (attribute.AttributeClass?.Name == "NotifyAttribute" ||
-                    attribute.AttributeClass?.Name == "Notify")
-                {
-                    var methodName = "OnPropertyChanged";
-
-                    if (attribute.ConstructorArguments.Length > 0)
-                    {
-                        var argValue = attribute.ConstructorArguments[0].Value?.ToString();
-                        if (!string.IsNullOrEmpty(argValue))
-                            methodName = argValue;
-                    }
-
-                    var containingType = propertySymbol.ContainingType;
-                    if (containingType == null)
-                        return null;
-
-                    var containing_ns = containingType.ContainingNamespace?.ToDisplayString();
-                    if (containing_ns == "<global namespace>")
-                        containing_ns = null;
-
-                    return new PropertyInfo
-                    {
-                        TypeName = propertySymbol.Type.ToDisplayString(),
-                        PropertyName = propertySymbol.Name,
-                        MethodName = methodName,
-                        ClassName = containingType.Name,
-                        Namespace = containing_ns,
-                        IsPublic = propertySymbol.DeclaredAccessibility == Accessibility.Public,
-                        FullTypeName = containingType.ToDisplayString()
-                    };
-                }
+                var arg_value = init_args[0].Value?.ToString();
+                if (!string.IsNullOrEmpty(arg_value))
+                    method_name = arg_value;
+                if (init_args.Length > 1)
+                    pass_changed_name = (bool)init_args[1].Value;
             }
 
-            return null;
+            var containing_type = symbol.ContainingType;
+            if (containing_type == null)
+                return null;
+
+            var containing_ns = containing_type.ContainingNamespace?.ToDisplayString();
+            if (containing_ns == "<global namespace>")
+                containing_ns = null;
+
+            return new PropertyInfo
+            {
+                TypeName = symbol.Type.ToDisplayString(),
+                PropertyName = symbol.Name,
+                MethodName = method_name,
+                PassChangedName = pass_changed_name,
+                ClassName = containing_type.Name,
+                Namespace = containing_ns,
+                IsPublic = symbol.DeclaredAccessibility == Accessibility.Public,
+                FullTypeName = containing_type.ToDisplayString()
+            };
         }
 
         private static void Execute(ImmutableArray<PropertyInfo> properties, SourceProductionContext context)
@@ -75,64 +77,63 @@ namespace PropertyNotify
             if (properties.IsDefaultOrEmpty)
                 return;
 
-            var propertiesByClass = properties
+            var by_class = properties
                 .Where(p => p != null)
                 .Cast<PropertyInfo>()
                 .GroupBy(p => p.FullTypeName);
 
-            foreach (var classGroup in propertiesByClass)
+            foreach (var class_props in by_class)
             {
-                var className = classGroup.First().ClassName;
-                var namespaceName = classGroup.First().Namespace;
-                var propertiesList = classGroup.ToList();
+                var class_name = class_props.First().ClassName;
+                var namespace_name = class_props.First().Namespace;
+                var props = class_props.ToList();
 
-                var sourceCode = GeneratePartialClass(namespaceName, className, propertiesList);
-                context.AddSource($"{className}.Generated.cs", SourceText.From(sourceCode, Encoding.UTF8));
+                var sourceCode = GeneratePartialClass(namespace_name, class_name, props);
+                context.AddSource($"{class_name}.Generated.cs", SourceText.From(sourceCode, Encoding.UTF8));
             }
         }
 
-        private static string GeneratePartialClass(string namespaceName, string className, List<PropertyInfo> properties)
+        private static string GeneratePartialClass(string namespace_name, string class_name, List<PropertyInfo> props)
         {
             var sb = new StringBuilder();
             sb.AppendLine(@"// <auto-generated/>");
             sb.AppendLine("using System.Collections.Generic;");
 
             sb.AppendLine();
-            if (!string.IsNullOrWhiteSpace(namespaceName))
+            if (!string.IsNullOrWhiteSpace(namespace_name))
             {
-                sb.AppendLine($"namespace {namespaceName}");
+                sb.AppendLine($"namespace {namespace_name}");
                 sb.AppendLine("{");
             }
-            sb.AppendLine($"    public partial class {className}");
+            sb.AppendLine($"    public partial class {class_name}");
             sb.AppendLine("    {");
 
-            foreach (var prop in properties)
+            foreach (var prop in props)
             {
-                var fieldName = $"_{ToCamelCase(prop.PropertyName)}";
+                var field_name = $"_{ToCamelCase(prop.PropertyName)}";
 
-                sb.AppendLine($"        private {prop.TypeName} {fieldName};");
+                sb.AppendLine($"        private {prop.TypeName} {field_name};");
                 sb.AppendLine();
                 sb.AppendLine($"        public partial {prop.TypeName} {prop.PropertyName}");
                 sb.AppendLine("        {");
-                sb.AppendLine($"            get => {fieldName};");
+                sb.AppendLine($"            get => {field_name};");
                 sb.AppendLine($"            set");
                 sb.AppendLine("            {");
-                sb.AppendLine($"                if (!EqualityComparer<{prop.TypeName}>.Default.Equals({fieldName}, value))");
+                sb.AppendLine($"                if (!EqualityComparer<{prop.TypeName}>.Default.Equals({field_name}, value))");
                 sb.AppendLine("                {");
-                sb.AppendLine($"                    {fieldName} = value;");
-                sb.AppendLine($"                    {prop.MethodName}();");
+                sb.AppendLine($"                    {field_name} = value;");
+                sb.AppendLine($"                    {prop.MethodName}({(prop.PassChangedName ? "nameof({prop.PropertyName})" : "")});");
                 sb.AppendLine("                }");
                 sb.AppendLine("            }");
                 sb.AppendLine("        }");
                 sb.AppendLine();
             }
 
-            // Remove the last newline for cleaner output
             if (sb.Length > 2)
                 sb.Length -= 2;
 
             sb.AppendLine("    }");
-            if (!string.IsNullOrWhiteSpace(namespaceName))
+            if (!string.IsNullOrWhiteSpace(namespace_name))
                 sb.AppendLine("}");
 
             return sb.ToString();
@@ -152,12 +153,13 @@ namespace PropertyNotify
 
     internal class PropertyInfo
     {
-        public string TypeName { get; set; } = string.Empty;
-        public string PropertyName { get; set; } = string.Empty;
-        public string MethodName { get; set; } = string.Empty;
-        public string ClassName { get; set; } = string.Empty;
-        public string Namespace { get; set; } = string.Empty;
-        public string FullTypeName { get; set; } = string.Empty;
+        public string TypeName { get; set; }
+        public string PropertyName { get; set; }
+        public string MethodName { get; set; }
+        public bool PassChangedName { get; set; }
+        public string ClassName { get; set; }
+        public string Namespace { get; set; }
+        public string FullTypeName { get; set; }
         public bool IsPublic { get; set; }
     }
 }
