@@ -50,13 +50,17 @@ namespace PropertyNotify
                     if (containingType == null)
                         return null;
 
+                    var containing_ns = containingType.ContainingNamespace?.ToDisplayString();
+                    if (containing_ns == "<global namespace>")
+                        containing_ns = null;
+
                     return new PropertyInfo
                     {
                         TypeName = propertySymbol.Type.ToDisplayString(),
                         PropertyName = propertySymbol.Name,
                         MethodName = methodName,
                         ClassName = containingType.Name,
-                        Namespace = containingType.ContainingNamespace?.ToDisplayString(),
+                        Namespace = containing_ns,
                         IsPublic = propertySymbol.DeclaredAccessibility == Accessibility.Public,
                         FullTypeName = containingType.ToDisplayString()
                     };
