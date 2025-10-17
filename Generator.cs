@@ -94,8 +94,11 @@ namespace PropertyNotify
             sb.AppendLine("using System.Collections.Generic;");
 
             sb.AppendLine();
-            sb.AppendLine($"namespace {namespaceName}");
-            sb.AppendLine("{");
+            if (!string.IsNullOrWhiteSpace(namespaceName))
+            {
+                sb.AppendLine($"namespace {namespaceName}");
+                sb.AppendLine("{");
+            }
             sb.AppendLine($"    public partial class {className}");
             sb.AppendLine("    {");
 
@@ -125,7 +128,8 @@ namespace PropertyNotify
                 sb.Length -= 2;
 
             sb.AppendLine("    }");
-            sb.AppendLine("}");
+            if (!string.IsNullOrWhiteSpace(namespaceName))
+                sb.AppendLine("}");
 
             return sb.ToString();
         }
