@@ -56,7 +56,7 @@ namespace PropertyNotify
                         PropertyName = propertySymbol.Name,
                         MethodName = methodName,
                         ClassName = containingType.Name,
-                        Namespace = containingType.ContainingNamespace?.ToDisplayString() ?? "Global",
+                        Namespace = containingType.ContainingNamespace?.ToDisplayString(),
                         IsPublic = propertySymbol.DeclaredAccessibility == Accessibility.Public,
                         FullTypeName = containingType.ToDisplayString()
                     };
