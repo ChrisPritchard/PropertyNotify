@@ -1,5 +1,6 @@
 ﻿namespace tests;
 
+using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
@@ -8,10 +9,29 @@ public class GeneratorTests
 {
     private static string Convert(string source)
     {
+        var attribute_source = File.ReadAllText("../../../../src/NotifyAttribute.cs");
+
+        var references = new[]
+        {
+            MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(Attribute).Assembly.Location),
+        };
+
         var compilation = CSharpCompilation.Create("Test")
-            .AddReferences(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
-            .AddReferences(MetadataReference.CreateFromFile(typeof(PropertyNotify.NotifyAttribute).Assembly.Location))
-            .AddSyntaxTrees(CSharpSyntaxTree.ParseText(source));
+            .AddReferences(references)
+            .AddSyntaxTrees(
+                CSharpSyntaxTree.ParseText(attribute_source),
+                CSharpSyntaxTree.ParseText(source)
+            );
+
+        // DEBUG: Check if attribute exists in compilation
+        var attributeType = compilation.GetTypeByMetadataName("PropertyNotify.NotifyAttribute");
+        Console.WriteLine($"Attribute type found: {attributeType != null}");
+        if (attributeType != null)
+        {
+            Console.WriteLine($"Attribute kind: {attributeType.TypeKind}");
+            Console.WriteLine($"Attribute base type: {attributeType.BaseType}");
+        }
 
         var generator = new PropertyNotify.Generator();
 
@@ -21,19 +41,17 @@ public class GeneratorTests
         if (diagnostics.Any())
             Assert.Fail(diagnostics.ToString());
 
-        var result = outputCompilation.SyntaxTrees.ToArray()[1];
+        var result = outputCompilation.SyntaxTrees.ToArray()[2];
         return result.ToString();
     }
 
     [Fact]
     public void BasicConversion()
     {
-        var source = @"
-using PropertyNotify;
-        
+        var source = @"        
 public partial class TestClass
 {
-    [Notify]
+    [PropertyNotify.Notify]
     public partial string TestProp { get; set; }
 
     private void OnPropertyChanged() {}
@@ -68,11 +86,9 @@ using System.Collections.Generic;
     public void DifferentMethod()
     {
         var source = @"
-using PropertyNotify;
-        
 public partial class TestClass
 {
-    [Notify(""UpdateProperties"")]
+    [PropertyNotify.Notify(""UpdateProperties"")]
     public partial string TestProp { get; set; }
 
     private void UpdateProperties() {}
@@ -107,11 +123,9 @@ using System.Collections.Generic;
     public void PassName()
     {
         var source = @"
-using PropertyNotify;
-        
 public partial class TestClass
 {
-    [Notify(pass_changed_name = true)]
+    [PropertyNotify.Notify(pass_changed_name = true)]
     public partial string TestProp { get; set; }
 
     private void OnPropertyChanged(string name) {}
@@ -146,11 +160,9 @@ using System.Collections.Generic;
     public void BothParamsDifferentOrder()
     {
         var source = @"
-using PropertyNotify;
-        
 public partial class TestClass
 {
-    [Notify(pass_changed_name = true, method_name = ""CallThis"")]
+    [PropertyNotify.Notify(pass_changed_name = true, method_name = ""CallThis"")]
     public partial string TestProp { get; set; }
 
     private void CallThis(string name) {}

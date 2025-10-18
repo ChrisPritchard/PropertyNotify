@@ -10,12 +10,10 @@ using Microsoft.CodeAnalysis.Text;
 [Generator]
 public class Generator : IIncrementalGenerator
 {
-    private static readonly string notify_attribute_type = typeof(NotifyAttribute).FullName;
-
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var propertyDeclarations = context.SyntaxProvider
-            .ForAttributeWithMetadataName(notify_attribute_type,
+            .ForAttributeWithMetadataName("PropertyNotify.NotifyAttribute",
                 IsValidTarget,
                 GetSemanticTargetForGeneration);
 
