@@ -1,30 +1,25 @@
 ﻿namespace tests;
 
-using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using PropertyNotify;
 using Xunit;
 
 public class GeneratorTests
 {
     private static string Convert(string source)
     {
-        var attribute_source = File.ReadAllText("../../../../src/NotifyAttribute.cs");
-
         var references = new[]
         {
             MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(Attribute).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(NotifyAttribute).Assembly.Location),
         };
 
         var compilation = CSharpCompilation.Create("Test")
             .AddReferences(references)
-            .AddSyntaxTrees(
-                CSharpSyntaxTree.ParseText(attribute_source),
-                CSharpSyntaxTree.ParseText(source)
-            );
+            .AddSyntaxTrees(CSharpSyntaxTree.ParseText(source));
 
-        // DEBUG: Check if attribute exists in compilation
         var attributeType = compilation.GetTypeByMetadataName("PropertyNotify.NotifyAttribute");
         Console.WriteLine($"Attribute type found: {attributeType != null}");
         if (attributeType != null)
@@ -33,9 +28,7 @@ public class GeneratorTests
             Console.WriteLine($"Attribute base type: {attributeType.BaseType}");
         }
 
-        var generator = new PropertyNotify.Generator();
-
-        CSharpGeneratorDriver.Create(generator)
+        CSharpGeneratorDriver.Create(new Generator())
             .RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
 
         if (diagnostics.Any())

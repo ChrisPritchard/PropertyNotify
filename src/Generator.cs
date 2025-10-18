@@ -12,6 +12,18 @@ public class Generator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
+        var notify_attribute_source = @"
+        namespace PropertyNotify;
+
+[AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
+public sealed class NotifyAttribute(string method_name = ""OnPropertyChanged"", bool pass_changed_name = false) : Attribute
+{
+    public string MethodName { get; } = method_name;
+    public bool PassChangedName { get; } = pass_changed_name;
+}
+";
+        context.RegisterPostInitializationOutput(ctx => ctx.AddSource("NotifyAttribute.cs", SourceText.From(notify_attribute_source, Encoding.UTF8)));
+
         var propertyDeclarations = context.SyntaxProvider
             .ForAttributeWithMetadataName("PropertyNotify.NotifyAttribute",
                 IsValidTarget,
