@@ -26,7 +26,7 @@ public class GeneratorTests
     }
 
     [Fact]
-    public async Task BasicConversion()
+    public void BasicConversion()
     {
         var source = @"
 using PropertyNotify;
@@ -65,7 +65,7 @@ using System.Collections.Generic;
     }
 
     [Fact]
-    public async Task DifferentMethod()
+    public void DifferentMethod()
     {
         var source = @"
 using PropertyNotify;
@@ -104,7 +104,7 @@ using System.Collections.Generic;
     }
 
     [Fact]
-    public async Task PassName()
+    public void PassName()
     {
         var source = @"
 using PropertyNotify;
@@ -143,7 +143,7 @@ using System.Collections.Generic;
     }
 
     [Fact]
-    public async Task BothParamsDifferentOrder()
+    public void BothParamsDifferentOrder()
     {
         var source = @"
 using PropertyNotify;
