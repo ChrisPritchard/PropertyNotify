@@ -8,7 +8,9 @@ Together they work to silently implement the INotifyChanged, PropertyChanged pat
 
 > **NOTE:** this project requires the target project you use it with to be  **dotnet 9** and **langversion 13** (the default for 9.0) to work, as it needs [partial properties](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-13.0/partial-properties).
 
-The gist of it is this:
+The notify attribute is added by the source generator as well, and will by default set the new property to call `OnPropertyChanged` with no arguments. Parameters can be sent to both change the method name it calls, and to get it to pass the property name as a string argument.
+
+## Example
 
 If you define a property like so:
 
@@ -51,7 +53,7 @@ public partial class ChildStyleMapFlat
 }
 ```
 
-That is, any property with the **Notify** attribute will be turned into a property with a backing field that calls your specified function (the default is '`OnPropertyChanged`') when the property's value changes.
+That is, any property with the **Notify** attribute will be turned into a property with a backing field that calls your specified function or the default when the property's value changes.
 
 Simple!
 
