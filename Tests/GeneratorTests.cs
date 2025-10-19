@@ -1,5 +1,6 @@
 ﻿namespace tests;
 
+using Basic.Reference.Assemblies;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using PropertyNotify;
@@ -9,28 +10,18 @@ public class GeneratorTests
 {
     private static string Convert(string source)
     {
-        var references = new[]
-        {
-            MetadataReference.CreateFromFile(typeof(object).Assembly.Location)
-        };
 
-        var compilation = CSharpCompilation.Create("Test")
-            .AddReferences(references)
-            .AddSyntaxTrees(CSharpSyntaxTree.ParseText(source));
-
-        var attributeType = compilation.GetTypeByMetadataName("PropertyNotify.NotifyAttribute");
-        Console.WriteLine($"Attribute type found: {attributeType != null}");
-        if (attributeType != null)
-        {
-            Console.WriteLine($"Attribute kind: {attributeType.TypeKind}");
-            Console.WriteLine($"Attribute base type: {attributeType.BaseType}");
-        }
+        var compilation = CSharpCompilation.Create("TestClass.dll",
+            [CSharpSyntaxTree.ParseText(source)],
+            Net90.References.All);
 
         CSharpGeneratorDriver.Create(new Generator())
             .RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
 
         if (diagnostics.Any())
             Assert.Fail(diagnostics.ToString());
+
+        var all = outputCompilation.SyntaxTrees.Select(o => o.ToString()).ToArray();
 
         var result = outputCompilation.SyntaxTrees.ToArray()[2];
         return result.ToString();
@@ -42,7 +33,7 @@ public class GeneratorTests
         var source = @"        
 public partial class TestClass
 {
-    [PropertyNotify.Notify]
+    [PropertyNotify.NotifyAttribute]
     public partial string TestProp { get; set; }
 
     private void OnPropertyChanged() {}

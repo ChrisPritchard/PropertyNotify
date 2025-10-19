@@ -41,7 +41,8 @@ public sealed class " + attribute_name + @"(string method_name = ""OnPropertyCha
         if (context is not PropertyDeclarationSyntax { AttributeLists.Count: > 0 } prop)
             return false;
 
-        return prop.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword));
+        var valid = prop.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword));
+        return valid;
     }
 
     private static PropertyInfo GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext context, CancellationToken _)
