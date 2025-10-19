@@ -10,27 +10,30 @@ using Microsoft.CodeAnalysis.Text;
 [Generator]
 public class Generator : IIncrementalGenerator
 {
-    public void Initialize(IncrementalGeneratorInitializationContext context)
-    {
-        var notify_attribute_source = @"
-        namespace PropertyNotify;
+    const string attribute_namespace = "PropertyNotify";
+    const string attribute_name = "NotifyAttribute";
+    const string notify_attribute_source = "namespace " + attribute_namespace + @";
 
-[AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
-public sealed class NotifyAttribute(string method_name = ""OnPropertyChanged"", bool pass_changed_name = false) : Attribute
+[System.AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
+public sealed class " + attribute_name + @"(string method_name = ""OnPropertyChanged"", bool pass_changed_name = false) : System.Attribute
 {
     public string MethodName { get; } = method_name;
     public bool PassChangedName { get; } = pass_changed_name;
-}
-";
-        context.RegisterPostInitializationOutput(ctx => ctx.AddSource("NotifyAttribute.cs", SourceText.From(notify_attribute_source, Encoding.UTF8)));
+}";
+    const string default_method_name = "OnPropertyChanged";
+
+    public void Initialize(IncrementalGeneratorInitializationContext context)
+    {
+        context.RegisterPostInitializationOutput(ctx => ctx.AddSource($"{attribute_name}.Generated.cs", SourceText.From(notify_attribute_source, Encoding.UTF8)));
 
         var propertyDeclarations = context.SyntaxProvider
-            .ForAttributeWithMetadataName("PropertyNotify.NotifyAttribute",
+            .ForAttributeWithMetadataName($"{attribute_namespace}.{attribute_name}",
                 IsValidTarget,
                 GetSemanticTargetForGeneration);
 
-        var compilationAndProperties = context.CompilationProvider.Combine(propertyDeclarations.Collect());
-        context.RegisterSourceOutput(compilationAndProperties, static (spc, source) => Execute(source.Right, spc));
+        var combined = context.CompilationProvider.Combine(propertyDeclarations.Collect());
+
+        context.RegisterSourceOutput(combined, static (spc, source) => Execute(source.Right, spc));
     }
 
     private static bool IsValidTarget(SyntaxNode context, CancellationToken _)
@@ -45,7 +48,7 @@ public sealed class NotifyAttribute(string method_name = ""OnPropertyChanged"", 
     {
         var attribute = context.Attributes.First();
         var symbol = context.TargetSymbol as IPropertySymbol;
-        var method_name = "OnPropertyChanged";
+        var method_name = default_method_name;
         var pass_changed_name = false;
 
         var init_args = attribute.ConstructorArguments;
@@ -59,9 +62,6 @@ public sealed class NotifyAttribute(string method_name = ""OnPropertyChanged"", 
         }
 
         var containing_type = context.TargetSymbol.ContainingType;
-        if (containing_type == null)
-            return null;
-
         var containing_ns = containing_type.ContainingNamespace?.ToDisplayString();
         if (containing_ns == "<global namespace>")
             containing_ns = null;
@@ -84,10 +84,7 @@ public sealed class NotifyAttribute(string method_name = ""OnPropertyChanged"", 
         if (properties.IsDefaultOrEmpty)
             return;
 
-        var by_class = properties
-            .Where(p => p != null)
-            .Cast<PropertyInfo>()
-            .GroupBy(p => p.FullTypeName);
+        var by_class = properties.GroupBy(p => p.FullTypeName);
 
         foreach (var class_props in by_class)
         {
@@ -158,7 +155,7 @@ public sealed class NotifyAttribute(string method_name = ""OnPropertyChanged"", 
     }
 }
 
-internal class PropertyInfo
+internal struct PropertyInfo
 {
     public string TypeName { get; set; }
     public string PropertyName { get; set; }

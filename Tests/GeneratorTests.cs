@@ -11,9 +11,7 @@ public class GeneratorTests
     {
         var references = new[]
         {
-            MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(Attribute).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(NotifyAttribute).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(object).Assembly.Location)
         };
 
         var compilation = CSharpCompilation.Create("Test")
