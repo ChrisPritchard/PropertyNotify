@@ -15,10 +15,11 @@ public class Generator : IIncrementalGenerator
     const string notify_attribute_source = "namespace " + attribute_namespace + @";
 
 [System.AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
-public sealed class " + attribute_name + @"(string method_name = ""OnPropertyChanged"", bool pass_changed_name = false) : System.Attribute
+public sealed class " + attribute_name + @"(string method_name = ""OnPropertyChanged"", bool pass_changed_name = false, bool pass_old_value = false) : System.Attribute
 {
     public string MethodName { get; } = method_name;
     public bool PassChangedName { get; } = pass_changed_name;
+    public bool PassOldValue { get; } = pass_old_value;
 }";
     const string default_method_name = "OnPropertyChanged";
 
@@ -51,6 +52,7 @@ public sealed class " + attribute_name + @"(string method_name = ""OnPropertyCha
         var symbol = context.TargetSymbol as IPropertySymbol;
         var method_name = default_method_name;
         var pass_changed_name = false;
+        var pass_old_value = false;
 
         var init_args = attribute.ConstructorArguments;
         if (init_args.Length > 0)
@@ -60,6 +62,8 @@ public sealed class " + attribute_name + @"(string method_name = ""OnPropertyCha
                 method_name = arg_value;
             if (init_args.Length > 1)
                 pass_changed_name = (bool)init_args[1].Value;
+            if (init_args.Length > 2)
+                pass_old_value = (bool)init_args[2].Value;
         }
 
         var containing_type = context.TargetSymbol.ContainingType;
@@ -73,6 +77,7 @@ public sealed class " + attribute_name + @"(string method_name = ""OnPropertyCha
             PropertyName = symbol.Name,
             MethodName = method_name,
             PassChangedName = pass_changed_name,
+            PassOldValue = pass_old_value,
             ClassName = containing_type.Name,
             Namespace = containing_ns,
             IsPublic = symbol.DeclaredAccessibility == Accessibility.Public,
@@ -126,15 +131,24 @@ public sealed class " + attribute_name + @"(string method_name = ""OnPropertyCha
             sb.AppendLine($"        {{");
             sb.AppendLine($"            if (!EqualityComparer<{prop.TypeName}>.Default.Equals({field_name}, value))");
             sb.AppendLine($"            {{");
+            if (prop.PassOldValue)
+                sb.AppendLine($"                var old_value = {field_name};");
             sb.AppendLine($"                {field_name} = value;");
-            sb.AppendLine($"                {prop.MethodName}({(prop.PassChangedName ? $"nameof({prop.PropertyName})" : "")});");
+            if (prop.PassChangedName && !prop.PassOldValue)
+                sb.AppendLine($"                {prop.MethodName}(nameof({prop.PropertyName}));");
+            else if (!prop.PassChangedName && prop.PassOldValue)
+                sb.AppendLine($"                {prop.MethodName}(old_value);");
+            else if (prop.PassChangedName && prop.PassOldValue)
+                sb.AppendLine($"                {prop.MethodName}(nameof({prop.PropertyName}), old_value);");
+            else
+                sb.AppendLine($"                {prop.MethodName}();");
             sb.AppendLine($"            }}");
             sb.AppendLine($"        }}");
             sb.AppendLine($"    }}");
             sb.AppendLine();
         }
         sb.AppendLine("}");
-        return sb.ToString();
+        return sb.ToString().Replace("\r\n", "\n");
     }
 
     private static string ToCamelCase(string name)
@@ -155,6 +169,7 @@ internal struct PropertyInfo
     public string PropertyName { get; set; }
     public string MethodName { get; set; }
     public bool PassChangedName { get; set; }
+    public bool PassOldValue { get; set; }
     public string ClassName { get; set; }
     public string Namespace { get; set; }
     public string FullTypeName { get; set; }
