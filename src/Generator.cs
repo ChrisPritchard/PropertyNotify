@@ -1,6 +1,7 @@
 ﻿namespace PropertyNotify;
 
 using System.Collections.Immutable;
+using System.ComponentModel;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -127,7 +128,7 @@ public sealed class " + attribute_name + @"(string method_name = ""OnPropertyCha
             sb.AppendLine($"                if (!EqualityComparer<{prop.TypeName}>.Default.Equals({field_name}, value))");
             sb.AppendLine("                {");
             sb.AppendLine($"                    {field_name} = value;");
-            sb.AppendLine($"                    {prop.MethodName}({(prop.PassChangedName ? "nameof({prop.PropertyName})" : "")});");
+            sb.AppendLine($"                    {prop.MethodName}({(prop.PassChangedName ? $"nameof({prop.PropertyName})" : "")});");
             sb.AppendLine("                }");
             sb.AppendLine("            }");
             sb.AppendLine("        }");

@@ -107,7 +107,7 @@ using System.Collections.Generic;
         var source = @"
 public partial class TestClass
 {
-    [PropertyNotify.Notify(pass_changed_name = true)]
+    [PropertyNotify.Notify(pass_changed_name: true)]
     public partial string TestProp { get; set; }
 
     private void OnPropertyChanged(string name) {}
@@ -144,7 +144,7 @@ using System.Collections.Generic;
         var source = @"
 public partial class TestClass
 {
-    [PropertyNotify.Notify(pass_changed_name = true, method_name = ""CallThis"")]
+    [PropertyNotify.Notify(pass_changed_name: true, method_name: ""CallThis"")]
     public partial string TestProp { get; set; }
 
     private void CallThis(string name) {}
